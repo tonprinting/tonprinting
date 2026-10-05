@@ -18,6 +18,11 @@ const DEFAULT={settings:{id:1,shop_name:'TON PRINTING',tagline:'งานพิ�
 function normalizeSettings(s){const x={...DEFAULT.settings,...(s||{})};if(/^ton printing$/i.test(String(x.shop_name||''))===false && /^sbuyprint$/i.test(String(x.shop_name||'')))x.shop_name='TON PRINTING';if(/^sbuyprint$/i.test(String(x.tagline||'')))x.tagline=DEFAULT.settings.tagline;return x;}
 
 function clone(x){return JSON.parse(JSON.stringify(x));}
+function normalizePrice(v){
+ const x=String(v??'').trim();
+ if(x==='') return '0';
+ return /^\d+(?:\.\d+)?$/.test(x) ? x : x.replace(/,/g,'').match(/^\d+(?:\.\d+)?/)?.[0] || '0';
+}
 function loadLocal(){try{if(!fs.existsSync(DATA_FILE)){fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(DEFAULT,null,2));}let d=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));return {settings:normalizeSettings(d.settings),products:Array.isArray(d.products)?d.products:[]};}catch(e){console.error(e);return clone(DEFAULT);}}
 function saveLocal(d){fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(d,null,2));}
 function send(res,s,t,b,h={}){res.writeHead(s,{'Content-Type':t,'Cache-Control':'no-store',...h});res.end(b)}
@@ -52,13 +57,13 @@ async function main(req,res){
  if(p.startsWith('/api/')&&!auth(req))return json(res,401,{error:'กรุณาเข้าสู่ระบบ'});
  if(req.method==='POST'&&p==='/api/products'){
    let b=await body(req);if(!b.category||!b.name)return json(res,400,{error:'กรุณากรอกหมวดหมู่และชื่อสินค้า'});let image=await upload(b.image);
-   if(!USE_SUPABASE){let d=loadLocal(),id=d.products.reduce((m,x)=>Math.max(m,Number(x.id)||0),0)+1;let product={id,category:b.category,name:b.name,price:String(b.price||''),description:b.description||'',image};d.products.push(product);saveLocal(d);return json(res,200,{ok:true,product});}
-   let rows=await sb('/rest/v1/products',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({category:b.category,name:b.name,price:String(b.price||''),description:b.description||'',image})});return json(res,200,{ok:true,product:rows[0]});
+   if(!USE_SUPABASE){let d=loadLocal(),id=d.products.reduce((m,x)=>Math.max(m,Number(x.id)||0),0)+1;let product={id,category:b.category,name:b.name,price:normalizePrice(b.price),description:b.description||'',image};d.products.push(product);saveLocal(d);return json(res,200,{ok:true,product});}
+   let rows=await sb('/rest/v1/products',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({category:b.category,name:b.name,price:normalizePrice(b.price),description:b.description||'',image})});return json(res,200,{ok:true,product:rows[0]});
  }
  if(req.method==='PUT'&&/^\/api\/products\/\d+$/.test(p)){
    let id=Number(p.split('/').pop()),b=await body(req),image=b.image;if(String(image||'').startsWith('data:'))image=await upload(image);
-   if(!USE_SUPABASE){let d=loadLocal(),i=d.products.findIndex(x=>Number(x.id)===id);if(i<0)return json(res,404,{error:'ไม่พบสินค้า'});d.products[i]={...d.products[i],category:b.category,name:b.name,price:String(b.price||''),description:b.description||'',image:image||d.products[i].image||''};saveLocal(d);return json(res,200,{ok:true,product:d.products[i]});}
-   let rows=await sb(`/rest/v1/products?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({category:b.category,name:b.name,price:String(b.price||''),description:b.description||'',image:image||''})});return json(res,200,{ok:true,product:rows[0]});
+   if(!USE_SUPABASE){let d=loadLocal(),i=d.products.findIndex(x=>Number(x.id)===id);if(i<0)return json(res,404,{error:'ไม่พบสินค้า'});d.products[i]={...d.products[i],category:b.category,name:b.name,price:normalizePrice(b.price),description:b.description||'',image:image||d.products[i].image||''};saveLocal(d);return json(res,200,{ok:true,product:d.products[i]});}
+   let rows=await sb(`/rest/v1/products?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({category:b.category,name:b.name,price:normalizePrice(b.price),description:b.description||'',image:image||''})});return json(res,200,{ok:true,product:rows[0]});
  }
  if(req.method==='DELETE'&&/^\/api\/products\/\d+$/.test(p)){
    let id=Number(p.split('/').pop());

@@ -27,3 +27,6 @@ alter table public.settings add column if not exists email text not null default
 alter table public.settings add column if not exists address text not null default '';
 alter table public.settings add column if not exists qr_code text not null default '';
 insert into public.settings(id) values(1) on conflict(id) do nothing;
+
+-- Migration for older deployments where price was numeric.
+alter table public.products alter column price type text using price::text;
