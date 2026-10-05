@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sbuyprint
+    name: tonprinting
     runtime: node
     plan: free
     buildCommand: npm install

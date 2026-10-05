@@ -1,4 +1,4 @@
-# SBUYPRINT Offline + Supabase Ready
+# TON PRINTING Offline + Supabase Ready
 
 ## เปิดใช้งานบน Windows
 1. ติดตั้ง Node.js LTS

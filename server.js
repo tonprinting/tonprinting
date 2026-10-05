@@ -14,10 +14,11 @@ const USER=process.env.ADMIN_USERNAME||'admin';
 const PASSWORD=process.env.ADMIN_PASSWORD||'ChangeMe123!';
 const DATA_FILE=path.join(__dirname,'data','store.json');
 const sessions=new Set();
-const DEFAULT={settings:{id:1,shop_name:'SBUYPRINT',tagline:'งานพิมพ์และสินค้าสำหรับร้านของคุณ',footer:'',logo:'',qr_code:'',phone:'',line:'',facebook:'',email:'',address:''},products:[]};
+const DEFAULT={settings:{id:1,shop_name:'TON PRINTING',tagline:'งานพิมพ์และงานสื่อสิ่งพิมพ์ครบวงจร',footer:'',logo:'',qr_code:'',phone:'',line:'',facebook:'',email:'',address:''},products:[]};
+function normalizeSettings(s){const x={...DEFAULT.settings,...(s||{})};if(/^ton printing$/i.test(String(x.shop_name||''))===false && /^sbuyprint$/i.test(String(x.shop_name||'')))x.shop_name='TON PRINTING';if(/^sbuyprint$/i.test(String(x.tagline||'')))x.tagline=DEFAULT.settings.tagline;return x;}
 
 function clone(x){return JSON.parse(JSON.stringify(x));}
-function loadLocal(){try{if(!fs.existsSync(DATA_FILE)){fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(DEFAULT,null,2));}let d=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));return {settings:{...DEFAULT.settings,...(d.settings||{})},products:Array.isArray(d.products)?d.products:[]};}catch(e){console.error(e);return clone(DEFAULT);}}
+function loadLocal(){try{if(!fs.existsSync(DATA_FILE)){fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(DEFAULT,null,2));}let d=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));return {settings:normalizeSettings(d.settings),products:Array.isArray(d.products)?d.products:[]};}catch(e){console.error(e);return clone(DEFAULT);}}
 function saveLocal(d){fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(d,null,2));}
 function send(res,s,t,b,h={}){res.writeHead(s,{'Content-Type':t,'Cache-Control':'no-store',...h});res.end(b)}
 function json(res,s,o,h={}){send(res,s,'application/json; charset=utf-8',JSON.stringify(o),h)}
@@ -27,7 +28,7 @@ function body(req){return new Promise((ok,no)=>{let b='';req.on('data',c=>{b+=c;
 async function sb(p,o={}){if(!USE_SUPABASE)throw Error('Supabase ยังไม่ได้ตั้งค่า');const target=new URL(p,SUPABASE_URL+'/').toString();const r=await fetch(target,{...o,headers:{apikey:KEY,Authorization:`Bearer ${KEY}`,'Content-Type':'application/json',...(o.headers||{})}});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d=t}if(!r.ok)throw Error(`Supabase ${r.status}: ${typeof d==='string'?d:JSON.stringify(d)}`);return d;}
 async function catalog(){
  if(!USE_SUPABASE)return loadLocal();
- try{let [s,p]=await Promise.all([sb('/rest/v1/settings?id=eq.1&select=*'),sb('/rest/v1/products?select=*&order=id.asc')]);return {settings:s[0]||DEFAULT.settings,products:p||[]};}
+ try{let [s,p]=await Promise.all([sb('/rest/v1/settings?id=eq.1&select=*'),sb('/rest/v1/products?select=*&order=id.asc')]);return {settings:normalizeSettings(s[0]),products:p||[]};}
  catch(e){console.error(e);return {...loadLocal(),dbError:e.message};}
 }
 async function upload(data){
@@ -41,7 +42,7 @@ async function upload(data){
 }
 async function main(req,res){
  const u=new URL(req.url,`http://${req.headers.host||'localhost'}`),p=u.pathname;
- if(req.method==='GET'&&p==='/health')return json(res,200,{ok:true,service:'sbuyprint',storage:USE_SUPABASE?'supabase':'local'});
+ if(req.method==='GET'&&p==='/health')return json(res,200,{ok:true,service:'tonprinting',storage:USE_SUPABASE?'supabase':'local'});
  if(req.method==='GET'&&(p==='/'||p==='/shop'))return send(res,200,'text/html; charset=utf-8',fs.readFileSync(path.join(__dirname,'public/index.html'),'utf8'));
  if(req.method==='GET'&&p==='/admin')return send(res,200,'text/html; charset=utf-8',fs.readFileSync(path.join(__dirname,'public/admin.html'),'utf8'));
  if(req.method==='GET'&&p==='/api/catalog')return json(res,200,await catalog());
@@ -65,10 +66,10 @@ async function main(req,res){
    await sb(`/rest/v1/products?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true});
  }
  if(req.method==='PUT'&&p==='/api/settings'){
-   let b=await body(req),logo=b.logo;if(String(logo||'').startsWith('data:'))logo=await upload(logo);let qr_code=b.qr_code;if(String(qr_code||'').startsWith('data:'))qr_code=await upload(qr_code);let payload={shop_name:b.shop_name||'SBUYPRINT',tagline:b.tagline||'',footer:b.footer||'',logo:logo||'',qr_code:qr_code||'',phone:b.phone||'',line:b.line||'',facebook:b.facebook||'',email:b.email||'',address:b.address||''};
+   let b=await body(req),logo=b.logo;if(String(logo||'').startsWith('data:'))logo=await upload(logo);let qr_code=b.qr_code;if(String(qr_code||'').startsWith('data:'))qr_code=await upload(qr_code);let payload={shop_name:b.shop_name||'TON PRINTING',tagline:b.tagline||'',footer:b.footer||'',logo:logo||'',qr_code:qr_code||'',phone:b.phone||'',line:b.line||'',facebook:b.facebook||'',email:b.email||'',address:b.address||''};
    if(!USE_SUPABASE){let d=loadLocal();d.settings={...d.settings,...payload,id:1};saveLocal(d);return json(res,200,{ok:true,settings:d.settings});}
    let rows=await sb('/rest/v1/settings?id=eq.1',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});return json(res,200,{ok:true,settings:rows[0]});
  }
  return send(res,404,'text/plain; charset=utf-8','Not found');
 }
-http.createServer((q,r)=>main(q,r).catch(e=>{console.error(e);json(r,500,{error:e.message})})).listen(PORT,'0.0.0.0',()=>console.log(`SBUYPRINT listening on http://localhost:${PORT} | storage=${USE_SUPABASE?'supabase':'local'}`));
+http.createServer((q,r)=>main(q,r).catch(e=>{console.error(e);json(r,500,{error:e.message})})).listen(PORT,'0.0.0.0',()=>console.log(`TON PRINTING listening on http://localhost:${PORT} | storage=${USE_SUPABASE?'supabase':'local'}`));

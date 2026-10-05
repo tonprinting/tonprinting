@@ -6,7 +6,7 @@ if not exist data mkdir data
 call npm install
 cls
 echo ========================================
-echo SBUYPRINT SERVER
+echo TON PRINTING SERVER
  echo ========================================
 echo Web   : http://localhost:3000
 echo Admin : http://localhost:3000/admin
