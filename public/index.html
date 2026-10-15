@@ -49,7 +49,7 @@ body{font-family:Arial,"Noto Sans Thai",sans-serif;margin:0;background:#faf8f4;c
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)"><button aria-label="ปิด">×</button><img id="lightboxImg" alt="ตัวอย่างสินค้า"></div>
 <script>
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function renderQR(s){const items=[[s.qr_code,'QR Code ช่องที่ 1'],[s.qr_code2,'QR Code ช่องที่ 2'],[s.qr_code3,'QR Code ช่องที่ 3']].filter(x=>x[0]);if(!items.length)return '';return '<div class="qr-list">'+items.map(x=>'<div class="qr-box"><h3>'+x[1]+'</h3><img src="'+x[0]+'" alt="'+x[1]+'"></div>').join('')+'</div>'}
+function renderQR(s){const items=[s.qr_code,s.qr_code2,s.qr_code3].filter(Boolean);if(!items.length)return '';return '<div class="qr-list">'+items.map(url=>'<div class="qr-box"><img src="'+url+'" alt="QR Code"></div>').join('')+'</div>'}
 function card(p){return `<article class="card">${p.image?`<img class="pic" src="${p.image}" alt="${esc(p.name)}" onclick="openLightbox(this.src)">`:'<div class="pic"></div>'}<h3>${esc(p.name)}</h3><div>${esc(p.price)}</div><p>${esc(p.description)}</p></article>`}
 function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open')}
 function closeLightbox(e){if(e.target.id==='lightbox'||e.target.tagName==='BUTTON')document.getElementById('lightbox').classList.remove('open')}
