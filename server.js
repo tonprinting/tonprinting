@@ -71,7 +71,7 @@ async function main(req,res){
    await sb(`/rest/v1/products?id=eq.${id}`,{method:'DELETE'});return json(res,200,{ok:true});
  }
  if(req.method==='PUT'&&p==='/api/settings'){
-   let b=await body(req),logo=b.logo;if(String(logo||'').startsWith('data:'))logo=await upload(logo);let qr_code=b.qr_code;if(String(qr_code||'').startsWith('data:'))qr_code=await upload(qr_code);let payload={shop_name:b.shop_name||'TON PRINTING',tagline:b.tagline||'',footer:b.footer||'',logo:logo||'',qr_code:qr_code||'',phone:b.phone||'',line:b.line||'',facebook:b.facebook||'',email:b.email||'',address:b.address||''};
+   let b=await body(req),logo=b.logo;if(String(logo||'').startsWith('data:'))logo=await upload(logo);let qr_code=b.qr_code;if(String(qr_code||'').startsWith('data:'))qr_code=await upload(qr_code);let qr_code2=b.qr_code2;if(String(qr_code2||'').startsWith('data:'))qr_code2=await upload(qr_code2);let qr_code3=b.qr_code3;if(String(qr_code3||'').startsWith('data:'))qr_code3=await upload(qr_code3);let payload={shop_name:b.shop_name||'TON PRINTING',tagline:b.tagline||'',footer:b.footer||'',logo:logo||'',qr_code:qr_code||'',qr_code2:qr_code2||'',qr_code3:qr_code3||'',phone:b.phone||'',line:b.line||'',facebook:b.facebook||'',email:b.email||'',address:b.address||''};
    if(!USE_SUPABASE){let d=loadLocal();d.settings={...d.settings,...payload,id:1};saveLocal(d);return json(res,200,{ok:true,settings:d.settings});}
    let rows=await sb('/rest/v1/settings?id=eq.1',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});return json(res,200,{ok:true,settings:rows[0]});
  }
